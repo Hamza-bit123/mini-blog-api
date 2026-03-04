@@ -12,7 +12,7 @@ router.post(
   authController.registerUser,
 );
 
-router.post("/login", validator(schemas.loginSchema), authController.loginUser);
+//router.post("/login", validator(schemas.loginSchema), authController.loginUser);
 
-router.post("/refresh");
+//router.post("/refresh");
 module.exports = router;
