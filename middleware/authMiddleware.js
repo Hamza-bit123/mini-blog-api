@@ -1,33 +1,28 @@
-const express = require("express");
 const jwt = require("jsonwebtoken");
 const refreshTokens = require("../models/authModel");
 
-const verifyToken = (req, res, next) => {
+const verifyRefreshToken = (req, res, next) => {
   const secret_key = process.env.JWT_SECRET;
   if (!secret_key) throw new Error("JWT_SECRET not set!");
 
-  const oldRefreshToken = req.cookie.refreshToken;
-  if (!oldRefreshToken)
+  const token = req.cookies.refreshToken;
+  if (!token)
     return res.status(401).json({ success: false, error: "Token not found!" });
 
-  const isFound = refreshTokens.includes(oldRefreshToken);
+  const isFound = refreshTokens.includes(token);
   if (!isFound)
-    return res
-      .status(401)
-      .json({ success: false, error: "please login again!" });
+    return res.status(403).json({ success: false, error: "Invlid token" });
 
   try {
-    const decode = jwt.verify(oldRefreshToken, secret_key);
-    req.decode = decode;
-    next();
+    const decode = jwt.verify(token, secret_key);
+    req.user = decode;
+    req.refreshToken = token;
   } catch (err) {
-    if (err.name === "TokenExpiredError") {
-      refreshTokens = refreshTokens.filter((r) => r !== oldRefreshToken);
-      res.clearCookie("refreshToken");
-      res
-        .status(401)
-        .json({ success: false, error: "Token expired, please login again" });
-    }
-    res.status(401).json({ success: false, error: "Invlid token" });
+    req.refreshToken = token;
+    req.tokenError = err;
+  } finally {
+    next();
   }
 };
+
+module.exports = { verifyRefreshToken };

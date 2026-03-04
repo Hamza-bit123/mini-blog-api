@@ -1,8 +1,7 @@
-const express = require("express");
-const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const users = require("../models/userModel");
 const generateTokens = require("../utils/token.util");
+const refreshTokens = require("../models/authModel");
 
 const registerUser = async (req, res) => {
   const user = users.find((u) => u.email === req.body.email);
@@ -58,8 +57,54 @@ const loginUser = async (req, res) => {
     });
 
     res.json({ success: true, token: accessToken });
-  } catch {
+
+    refreshTokens.push(refreshToken);
+  } catch (err) {
+    console.log("error: " + err);
     throw new Error("Somtething went wrong!");
   }
 };
-module.exports = { registerUser, loginUser };
+
+const refreshToken = (req, res) => {
+  const oldrefreshToken = req.refreshToken;
+
+  if (req.tokenError) {
+    if (req.tokenError.name === "TokenExpiredError") {
+      const index = refreshTokens.indexOf(oldrefreshToken);
+      refreshTokens.splice(index, 1);
+
+      res.clearCookie("refreshToken");
+      return res.status(401).json({ success: false, error: "Token expired" });
+    }
+
+    return res.status(401).json({ success: false, error: "Invalid token" });
+  }
+
+  const index = refreshTokens.indexOf(oldrefreshToken);
+
+  refreshTokens.splice(index, 1);
+
+  const { refreshToken, accessToken } = generateTokens(req.user);
+
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: false,
+  });
+  res.json({ success: true, token: accessToken });
+  refreshTokens.push(refreshToken);
+};
+
+const logoutUser = (req, res) => {
+  const token = req.cookies.refreshToken;
+  if (token) {
+    const isFound = refreshTokens.includes(token);
+    if (isFound) {
+      const index = refreshTokens.indexOf(token);
+      refreshTokens.splice(index, 1);
+    }
+    res.clearCookie("refreshToken");
+  }
+
+  res.json({ success: true, message: "logged out successfully" });
+};
+module.exports = { registerUser, loginUser, refreshToken, logoutUser };

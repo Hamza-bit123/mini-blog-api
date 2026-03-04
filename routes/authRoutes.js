@@ -12,7 +12,13 @@ router.post(
   authController.registerUser,
 );
 
-//router.post("/login", validator(schemas.loginSchema), authController.loginUser);
+router.post("/login", validator(schemas.loginSchema), authController.loginUser);
 
-//router.post("/refresh");
+router.post(
+  "/refresh",
+  authMiddleware.verifyRefreshToken,
+  authController.refreshToken,
+);
+
+router.post("/logout", authController.logoutUser);
 module.exports = router;
