@@ -8,6 +8,7 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use("/auth", authRoutes);
+app.use("/refreshToken", authRoutes);
 
 app.get("/", (req, res) => {
   res.json({ users });

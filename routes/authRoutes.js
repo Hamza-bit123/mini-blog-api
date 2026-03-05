@@ -21,4 +21,6 @@ router.post(
 );
 
 router.post("/logout", authController.logoutUser);
+
+router.get("/", authMiddleware.verifyRefreshToken, authController.returnTokens);
 module.exports = router;

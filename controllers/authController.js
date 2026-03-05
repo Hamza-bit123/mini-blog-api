@@ -3,6 +3,10 @@ const users = require("../models/userModel");
 const generateTokens = require("../utils/token.util");
 const refreshTokens = require("../models/authModel");
 
+//takes string tokens and returns hashed version of the string
+//if the input is not string or empty it returns error message
+const hashToken = require("../utils/hashTokens");
+
 const registerUser = async (req, res) => {
   const user = users.find((u) => u.email === req.body.email);
   if (user)
@@ -12,8 +16,8 @@ const registerUser = async (req, res) => {
 
   try {
     const { password, ...rest } = req.body;
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const hashedPassword = await hashToken(password);
 
     const newUser = {
       id: users.length + 1,
@@ -51,14 +55,18 @@ const loginUser = async (req, res) => {
 
     const { accessToken, refreshToken } = generateTokens(user);
 
-    res.cookie("refreshToken", refreshToken, {
+    const hashedToken = await hashToken(refreshToken);
+
+    res.cookie("refreshToken", hashedToken, {
       httpOnly: true,
       secure: false,
     });
 
     res.json({ success: true, token: accessToken });
 
-    refreshTokens.push(refreshToken);
+    refreshTokens.push(hashedToken);
+
+    console.log(refreshToken);
   } catch (err) {
     console.log("error: " + err);
     throw new Error("Somtething went wrong!");
@@ -107,4 +115,14 @@ const logoutUser = (req, res) => {
 
   res.json({ success: true, message: "logged out successfully" });
 };
-module.exports = { registerUser, loginUser, refreshToken, logoutUser };
+
+const returnTokens = (req, res) => {
+  res.json({ success: true, tokens: refreshTokens });
+};
+module.exports = {
+  registerUser,
+  loginUser,
+  refreshToken,
+  logoutUser,
+  returnTokens,
+};
