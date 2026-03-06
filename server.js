@@ -9,9 +9,9 @@ const app = express();
 
 app.use(express.json());
 app.use(cookieParser());
+app.use(globalErrorHandler);
 app.use("/auth", authRoutes);
 app.use("/posts", postRoutes);
-app.use(globalErrorHandler);
 
 app.get("/", (req, res) => {
   res.json({ users });
