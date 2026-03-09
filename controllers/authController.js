@@ -149,7 +149,7 @@ const refreshToken = async (req, res) => {
   }
 };
 
-const logoutUser = (req, res) => {
+const logoutUser = async (req, res) => {
   const refreshToken = req.cookies.refreshToken;
   if (refreshToken) {
     const { error, decode } = verifyToken(refreshToken);
@@ -166,6 +166,13 @@ const logoutUser = (req, res) => {
 
       return res.status(403).json({ success: false, error: error.message });
     }
+
+    const sql = "DELETE FROM refresh_tokens WHERE user_id = ?";
+    await pool.execute(sql, [decode.id]);
+
+    res.clearCookie("refreshToken");
+
+    res.json({ success: false, message: "Logged out successfully" });
   }
 };
 module.exports = { registerUser, loginUser, refreshToken, logoutUser };
