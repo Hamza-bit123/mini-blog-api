@@ -1,128 +1,171 @@
+const hash = require("../utils/hash");
+const pool = require("../configure/db");
 const bcrypt = require("bcryptjs");
-const users = require("../models/userModel");
-const generateTokens = require("../utils/token.util");
-const refreshTokens = require("../models/authModel");
-
-//takes string tokens and returns hashed version of the string
-//if the input is not string or empty it returns error message
-const hashToken = require("../utils/hashTokens");
+const generateTokens = require("../utils/generateTokens");
+const verifyToken = require("../utils/jwt");
 
 const registerUser = async (req, res) => {
-  const user = users.find((u) => u.email === req.body.email);
-  if (user)
-    return res
-      .status(409)
-      .json({ success: false, error: "Email already registered" });
-
   try {
-    const { password, ...rest } = req.body;
+    const { password, username, email } = req.body;
 
-    const hashedPassword = await hashToken(password);
+    let sql = "SELECT id FROM users WHERE email = ?";
+    const [id] = await pool.execute(sql, [email]);
 
-    const newUser = {
-      id: users.length + 1,
-      ...rest,
-      role: "user",
-      password: hashedPassword,
-    };
+    if (id.length > 0)
+      return res
+        .status(400)
+        .json({ success: false, error: "Email already exists!" });
 
-    users.push(newUser);
-    const { password: _, ...userWithoutPassword } = newUser;
-    res.json({
+    const hashedPassword = await hash(password);
+
+    sql = "INSERT INTO users (username, email, password) VALUES (?,?,?)";
+    const [result] = await pool.execute(sql, [username, email, hashedPassword]);
+
+    const user = { id: result.insertId, username, email, role: "user" };
+    res.status(201).json({
       success: true,
       message: "registered successfully!",
-      user: userWithoutPassword,
+      user,
     });
   } catch (err) {
-    console.log(err);
-    throw new Error("Something went wrong");
+    console.log("error: " + err.message);
+
+    res.status(500).json({ success: false, error: "server error!" });
   }
 };
 
 const loginUser = async (req, res) => {
-  const user = users.find((u) => u.email === req.body.email);
-  if (!user)
-    return res
-      .status(401)
-      .json({ success: false, error: "Incorrect email or password!" });
   try {
-    const isMatch = await bcrypt.compare(req.body.password, user.password);
+    const { password, email } = req.body;
+    let sql = "SELECT id, email,role, password FROM users WHERE email = ?";
+    const [result] = await pool.execute(sql, [email]);
+
+    if (result.length === 0)
+      return res
+        .status(401)
+        .json({ success: false, error: "Invalid email or password" });
+
+    const isMatch = await bcrypt.compare(password, result[0].password);
 
     if (!isMatch)
       return res
         .status(401)
-        .json({ success: false, error: "Incorrect email or password!" });
+        .json({ success: false, error: "Invalid email or password" });
 
-    const { accessToken, refreshToken } = generateTokens(user);
+    const { accessToken, refreshToken } = generateTokens(result[0]);
+    const hashedRefreshToken = await hash(refreshToken);
 
-    const hashedToken = await hashToken(refreshToken);
+    sql = "SELECT id FROM refresh_tokens WHERE user_id = ?";
+    const [tokenRecord] = await pool.execute(sql, [result[0].id]);
 
-    res.cookie("refreshToken", hashedToken, {
+    if (tokenRecord.length === 0) {
+      sql = "INSERT INTO refresh_tokens (user_id, token)VALUES (?,?)";
+
+      await pool.execute(sql, [result[0].id, hashedRefreshToken]);
+    } else {
+      sql = "UPDATE `refresh_tokens` SET `token` = ? WHERE user_id = ?";
+      await pool.execute(sql, [hashedRefreshToken, result[0].id]);
+    }
+
+    res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: false,
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.json({ success: true, token: accessToken });
-
-    refreshTokens.push(hashedToken);
-
-    console.log(refreshToken);
+    res.json({
+      success: true,
+      accessToken,
+    });
   } catch (err) {
-    console.log("error: " + err);
-    throw new Error("Somtething went wrong!");
+    console.log("error: " + err.message);
+    res.status(500).json({
+      success: false,
+      error: "server error",
+    });
   }
 };
 
-const refreshToken = (req, res) => {
-  const oldrefreshToken = req.refreshToken;
+const refreshToken = async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+    if (!refreshToken)
+      return res.status(401).json({
+        success: false,
+        error: "refresh token not found!",
+      });
 
-  if (req.tokenError) {
-    if (req.tokenError.name === "TokenExpiredError") {
-      const index = refreshTokens.indexOf(oldrefreshToken);
-      refreshTokens.splice(index, 1);
+    const { error, decode } = verifyToken(refreshToken);
+    if (error) {
+      if (error instanceof Error) {
+        console.log(error.message);
+        return res.status(500).json({
+          success: false,
+          error: "Server Error. Please try again latter!",
+        });
+      }
+      if (error.name === "TokenExpiredError")
+        return res.status(401).json({ success: false, error: error.message });
 
-      res.clearCookie("refreshToken");
-      return res.status(401).json({ success: false, error: "Token expired" });
+      return res.status(403).json({ success: false, error: error.message });
     }
 
-    return res.status(401).json({ success: false, error: "Invalid token" });
+    let sql = "SELECT id FROM refresh_tokens WHERE user_id = ?";
+
+    const [result] = await pool.execute(sql, [decode.id]);
+
+    if (result.length === 0)
+      return res.status(401).json({
+        success: false,
+        error: "Invalid token",
+      });
+
+    const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
+      generateTokens(decode);
+
+    sql = "UPDATE refresh_tokens SET token = ? WHERE user_id = ?";
+
+    const hashedRefreshToken = await hash(newRefreshToken);
+    await pool.execute(sql, [hashedRefreshToken, decode.id]);
+
+    res.cookie("refreshToken", newRefreshToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    res.json({
+      success: true,
+      accessToken: newAccessToken,
+    });
+  } catch (err) {
+    console.log("error: " + err.message);
+    res.status(500).json({
+      success: false,
+      error: "Server error",
+    });
   }
-
-  const index = refreshTokens.indexOf(oldrefreshToken);
-
-  refreshTokens.splice(index, 1);
-
-  const { refreshToken, accessToken } = generateTokens(req.user);
-
-  res.cookie("refreshToken", refreshToken, {
-    httpOnly: true,
-    secure: false,
-  });
-  res.json({ success: true, token: accessToken });
-  refreshTokens.push(refreshToken);
 };
 
 const logoutUser = (req, res) => {
-  const token = req.cookies.refreshToken;
-  if (token) {
-    const isFound = refreshTokens.includes(token);
-    if (isFound) {
-      const index = refreshTokens.indexOf(token);
-      refreshTokens.splice(index, 1);
+  const refreshToken = req.cookies.refreshToken;
+  if (refreshToken) {
+    const { error, decode } = verifyToken(refreshToken);
+    if (error) {
+      if (error instanceof Error) {
+        console.log(error.message);
+        return res.status(500).json({
+          success: false,
+          error: "Server Error. Please try again latter!",
+        });
+      }
+      if (error.name === "TokenExpiredError")
+        return res.status(401).json({ success: false, error: error.message });
+
+      return res.status(403).json({ success: false, error: error.message });
     }
-    res.clearCookie("refreshToken");
   }
-
-  res.json({ success: true, message: "logged out successfully" });
 };
-
-const returnTokens = (req, res) => {
-  res.json({ success: true, tokens: refreshTokens });
-};
-module.exports = {
-  registerUser,
-  loginUser,
-  refreshToken,
-  logoutUser,
-  returnTokens,
-};
+module.exports = { registerUser, loginUser, refreshToken, logoutUser };
