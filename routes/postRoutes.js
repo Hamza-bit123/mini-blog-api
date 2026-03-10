@@ -10,8 +10,8 @@ const router = express.Router();
 router.post(
   "/create",
   verifyAccessToken,
-  validator(postSchema),
   upload.single("image"),
+  validator(postSchema),
   createPost,
 );
 module.exports = router;

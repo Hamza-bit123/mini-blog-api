@@ -15,6 +15,10 @@ const postSchema = Joi.object({
   title: Joi.string().min(3).trim().required(),
   content: Joi.string().min(5).trim().required(),
   category_id: Joi.number().integer().required(),
-  tags: Joi.array().items(Joi.string().min(2).max(20)).min(1).max(5).required(),
+  tags: Joi.array()
+    .items(Joi.string().min(2).max(20).required())
+    .min(1)
+    .max(5)
+    .required(),
 });
 module.exports = { registrationSchema, loginSchema, postSchema };
