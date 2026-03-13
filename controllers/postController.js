@@ -1,4 +1,4 @@
-const { error } = require("console");
+const { json } = require("express");
 const pool = require("../configure/db");
 const fs = require("fs");
 
@@ -174,10 +174,19 @@ const updatePost = async (req, res) => {
   const user_id = req.user.id;
 
   const getPostSql = "SELECT id FROM posts WHERE id = ?  AND author_id = ?";
+  const updatePostSql = "UPDATE posts SET ? WHERE id = 9 AND author_id = 4";
+
+  if (!req.body)
+    return res
+      .status(400)
+      .json({ success: false, error: "Nothing to update!" });
 
   const conn = await pool.getConnection();
   conn.beginTransaction();
+
   try {
+    //checking the existance of the post and authorization of the user
+
     const [post] = await conn.execute(getPostSql, [post_id, user_id]);
 
     if (post.length === 0)
@@ -185,10 +194,29 @@ const updatePost = async (req, res) => {
         .status(404)
         .json({ success: false, error: "Resource not found!" });
 
-    res.send(req.body);
+    const postFields = req.body;
+    delete postFields.tags;
+
+    const keys = Object.keys(postFields);
+
+    let result;
+    if (keys.length !== 0)
+      [result] = await conn.query(updatePostSql, [postFields]);
+    await conn.commit();
+
+    res.send(result);
   } catch (error) {
     console.log("Error: " + error.message);
     await conn.rollback();
+
+    //delete image if uploaded
+
+    if (req.file) {
+      fs.unlink(req.file.path, (error) => {
+        if (error) console.log(error.message);
+      });
+    }
+
     res.status(500).json({ success: false, error: "Server error!" });
   } finally {
     conn.release();

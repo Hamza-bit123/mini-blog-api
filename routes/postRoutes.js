@@ -1,6 +1,6 @@
 const express = require("express");
 const { verifyAccessToken } = require("../middleware/authMiddleware");
-const { postSchema } = require("../schemas/schemas");
+const { postSchema, patchSchema } = require("../schemas/schemas");
 const validator = require("../validator/validate");
 const upload = require("../middleware/uploadMiddleware");
 const {
@@ -27,6 +27,12 @@ router.get("/me", verifyAccessToken, returnMypost);
 
 router.get("/:id/", verifyAccessToken, returnPost);
 
-router.patch("/:id", verifyAccessToken, updatePost);
+router.patch(
+  "/:id",
+  verifyAccessToken,
+  upload.single("image"),
+  validator(patchSchema),
+  updatePost,
+);
 
 module.exports = router;

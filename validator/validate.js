@@ -2,6 +2,10 @@ const fs = require("fs");
 
 const validator = (schema) => {
   return (req, res, next) => {
+    if (req.body?.tags) {
+      const tags = Array.isArray(req.body.tags) ? null : [req.body.tags];
+      if (tags) req.body.tags = tags;
+    }
     const { error } = schema.validate(req.body);
 
     if (error) {

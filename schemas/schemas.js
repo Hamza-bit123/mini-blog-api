@@ -21,4 +21,12 @@ const postSchema = Joi.object({
     .max(5)
     .required(),
 });
-module.exports = { registrationSchema, loginSchema, postSchema };
+
+const patchSchema = Joi.object({
+  title: Joi.string().min(3).trim(),
+  content: Joi.string().min(5).trim(),
+  category_id: Joi.number().integer(),
+  tags: Joi.array().items(Joi.string().min(2).max(20)),
+});
+
+module.exports = { registrationSchema, loginSchema, postSchema, patchSchema };
