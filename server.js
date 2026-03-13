@@ -8,7 +8,7 @@ const app = express();
 app.use(cookieParser());
 app.use(express.json());
 app.use("/api/auth", authRoutes);
-app.use("/api/post", postRoutes);
+app.use("/api/posts", postRoutes);
 
 const port = process.env.PORT || 4000;
 app.listen(port, () => {

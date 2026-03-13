@@ -3,7 +3,13 @@ const { verifyAccessToken } = require("../middleware/authMiddleware");
 const { postSchema } = require("../schemas/schemas");
 const validator = require("../validator/validate");
 const upload = require("../middleware/uploadMiddleware");
-const { createPost } = require("../controllers/postController");
+const {
+  createPost,
+  returnPosts,
+  returnPost,
+  returnMypost,
+  updatePost,
+} = require("../controllers/postController");
 
 const router = express.Router();
 
@@ -14,4 +20,13 @@ router.post(
   validator(postSchema),
   createPost,
 );
+
+router.get("/", verifyAccessToken, returnPosts);
+
+router.get("/me", verifyAccessToken, returnMypost);
+
+router.get("/:id/", verifyAccessToken, returnPost);
+
+router.patch("/:id", verifyAccessToken, updatePost);
+
 module.exports = router;
