@@ -1,6 +1,7 @@
 const { json } = require("express");
 const pool = require("../configure/db");
 const fs = require("fs");
+const path = require("path");
 
 const createPost = async (req, res) => {
   const { title, content, category_id, tags } = req.body;
@@ -63,7 +64,6 @@ const createPost = async (req, res) => {
         author_id: req.user.id,
         tags,
       },
-      relation,
       relations: post_tagResult,
     });
   } catch (error) {
@@ -172,39 +172,113 @@ const returnPost = async (req, res) => {
 const updatePost = async (req, res) => {
   const post_id = req.params.id;
   const user_id = req.user.id;
+  const tags = req.body.tags;
+  const arrayTags = tags?.map((t) => [t]);
 
-  const getPostSql = "SELECT id FROM posts WHERE id = ?  AND author_id = ?";
-  const updatePostSql = "UPDATE posts SET ? WHERE id = 9 AND author_id = 4";
+  const placeholders = tags?.map((t) => "?").join(",");
 
-  if (!req.body)
+  const getPostSql =
+    "SELECT id, image FROM posts WHERE id = ?  AND author_id = ?";
+
+  const updatePostSql = "UPDATE posts SET ? WHERE id = ? AND author_id = ?";
+
+  const deleteTags = `DELETE FROM tags WHERE id IN (
+                      SELECT tag_id
+                      FROM post_tags
+                      WHERE post_id = ?
+                      AND tag_id NOT IN(SELECT tag_id 
+                      FROM post_tags 
+                      WHERE post_id <> ?)) AND name NOT IN (${placeholders})`;
+
+  const deleteRelations = "DELETE FROM post_tags WHERE post_id = ?";
+
+  const getTags = `SELECT id FROM tags WHERE name IN (${placeholders})`;
+
+  const insertTags = "INSERT IGNORE INTO tags (name) VALUES ?";
+
+  const insertRelations = "INSERT INTO post_tags (post_id, tag_id) VALUES ?";
+
+  const getNewPost = `SELECT p.id, p.title, p.content, p.image , c.id AS category_id, c.name AS category, p.created_at, p.updated_at , u.id AS author_id, u.username AS author, GROUP_CONCAT(t.name)  AS tags 
+                      FROM posts p
+                      JOIN users u ON u.id = p.author_id
+                      JOIN categories c ON c.id = p.category_id
+                      LEFT JOIN post_tags pt ON pt.post_id = p.id
+                      LEFT JOIN tags t ON t.id = pt.tag_id
+                      WHERE p.id = ?
+                      GROUP BY p.id`;
+
+  if (Object.keys(req.body).length === 0 && !req.file)
     return res
       .status(400)
       .json({ success: false, error: "Nothing to update!" });
 
   const conn = await pool.getConnection();
-  conn.beginTransaction();
+  await conn.beginTransaction();
 
   try {
     //checking the existance of the post and authorization of the user
 
     const [post] = await conn.execute(getPostSql, [post_id, user_id]);
 
-    if (post.length === 0)
+    if (post.length === 0) {
+      if (req.file) {
+        fs.unlink(req.file.path, (error) => {
+          if (error) console.log(error.message);
+        });
+      }
       return res
         .status(404)
         .json({ success: false, error: "Resource not found!" });
+    }
 
     const postFields = req.body;
     delete postFields.tags;
 
+    if (req.file) postFields.image = req.file.filename;
+
     const keys = Object.keys(postFields);
 
-    let result;
     if (keys.length !== 0)
-      [result] = await conn.query(updatePostSql, [postFields]);
+      await conn.query(updatePostSql, [postFields, post_id, user_id]);
+
+    //controlling tag updates
+
+    let tagIds;
+
+    if (tags) {
+      await conn.execute(deleteTags, [post_id, post_id, ...tags]);
+
+      await conn.execute(deleteRelations, [post_id]);
+
+      await conn.query(insertTags, [arrayTags]);
+
+      [tagIds] = await conn.execute(getTags, tags);
+
+      const relations = tagIds.map((t) => [post_id, t.id]);
+
+      await conn.query(insertRelations, [relations]);
+    }
+
+    const [updatedPost] = await conn.execute(getNewPost, [post_id]);
+
+    const formattedPost = {
+      ...updatedPost[0],
+      tags: updatedPost[0].tags ? updatedPost[0].tags.split(",") : [],
+    };
+
     await conn.commit();
 
-    res.send(result);
+    if (req.file) {
+      const oldImagePath = path.join(__dirname, "../uploads", post[0].image);
+      fs.unlink(oldImagePath, (err) => {
+        if (err) console.log("error: " + err.message);
+      });
+    }
+    res.json({
+      success: true,
+      message: "Post updated successfully!",
+      post: formattedPost,
+    });
   } catch (error) {
     console.log("Error: " + error.message);
     await conn.rollback();
