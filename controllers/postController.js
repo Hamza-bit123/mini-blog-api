@@ -297,10 +297,83 @@ const updatePost = async (req, res) => {
   }
 };
 
+const deletePost = async (req, res) => {
+  const post_id = req.params.id;
+  const user_id = req.user.id;
+  let placeholders;
+  let arrayTagIds;
+
+  const getTagIds = ` SELECT tag_id
+                        FROM post_tags
+                        WHERE post_id = ?
+                        AND tag_id NOT IN(SELECT tag_id 
+                        FROM post_tags 
+                        WHERE post_id <> ?)`;
+
+  try {
+    const [tagIds] = await pool.execute(getTagIds, [post_id, post_id]);
+
+    arrayTagIds = tagIds && tagIds.map((t) => t.tag_id);
+
+    placeholders = tagIds.map(() => "?").join(",");
+  } catch (error) {
+    console.log("error: " + error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+
+  const getPostSql =
+    "SELECT id, image FROM posts WHERE id = ?  AND author_id = ?";
+  const deletePost = "DELETE FROM posts WHERE id = ?";
+  const deleteRelations = "DELETE FROM post_tags WHERE post_id = ?";
+  const deleteTags = `DELETE FROM tags WHERE id IN (${placeholders})`;
+
+  //Start transaction
+  const conn = await pool.getConnection();
+  await conn.beginTransaction();
+
+  try {
+    const [post] = await conn.execute(getPostSql, [post_id, user_id]);
+
+    if (post.length === 0)
+      return res
+        .status(404)
+        .json({ success: false, error: "Resource not found!" });
+
+    await conn.execute(deletePost, [post_id]);
+    if (arrayTagIds) await conn.execute(deleteTags, arrayTagIds);
+    await conn.execute(deleteRelations, [post_id]);
+
+    await conn.commit();
+
+    if (post[0].image) {
+      const oldImagePath = path.join(__dirname, "../uploads", post[0].image);
+      fs.unlink(oldImagePath, (err) => {
+        if (err) console.log("Error: " + err.message);
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Successfully deleted!",
+      placeholders,
+      arrayTagIds,
+    });
+  } catch (error) {
+    console.log("error: " + error.message);
+    res.status(500).json({ success: false, error: "Server error" });
+  }
+};
+
+const test = (req, res) => {
+  res.send(req.query.limit);
+};
+
 module.exports = {
   createPost,
   returnPosts,
   returnMypost,
   returnPost,
   updatePost,
+  deletePost,
+  test,
 };
