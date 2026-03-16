@@ -7,7 +7,7 @@ const {
   createPost,
   returnPosts,
   returnPost,
-  returnMypost,
+  returnMyposts,
   updatePost,
   deletePost,
   checkQuery,
@@ -25,7 +25,7 @@ router.post(
 
 router.get("/", verifyAccessToken, returnPosts);
 
-router.get("/me", verifyAccessToken, returnMypost);
+router.get("/me", verifyAccessToken, returnMyposts);
 
 router.get("/:id/", verifyAccessToken, returnPost);
 
