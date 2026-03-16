@@ -1,4 +1,3 @@
-const { json } = require("express");
 const pool = require("../configure/db");
 const fs = require("fs");
 const path = require("path");
@@ -85,17 +84,22 @@ const createPost = async (req, res) => {
 };
 
 const returnPosts = async (req, res) => {
-  const sql = `SELECT p.id, title, content ,image, c.id AS category_id, c.name AS category, p.created_at, u.id AS author_id, u.username AS author, GROUP_CONCAT(t.name)  AS tags 
+  try {
+    const limit = req.query.limit ? req.query.limit : 10;
+    const page = req.query.page ? req.query.page : 1;
+    const offset = (page - 1) * limit;
+
+    const sql = `SELECT p.id, title, content ,image, c.id AS category_id, c.name AS category, p.created_at, u.id AS author_id, u.username AS author, GROUP_CONCAT(t.name)  AS tags 
               FROM posts p
               JOIN users u ON u.id = p.author_id
               JOIN categories c ON c.id = p.category_id
               LEFT JOIN post_tags pt ON pt.post_id = p.id
               LEFT JOIN tags t ON t.id = pt.tag_id
               GROUP BY p.id
-              ORDER BY p.created_at DESC`;
+              ORDER BY p.created_at DESC
+              LIMIT ?,?`;
 
-  try {
-    const [posts] = await pool.execute(sql);
+    const [posts] = await pool.execute(sql, [offset, limit]);
 
     const formattedPosts = posts?.map((p) => ({
       ...p,
@@ -109,7 +113,11 @@ const returnPosts = async (req, res) => {
   }
 };
 
-const returnMypost = async (req, res) => {
+const returnMyposts = async (req, res) => {
+  const limit = req.query.limit ? req.query.limit : 10;
+  const page = req.query.page ? req.query.page : 1;
+  const offset = (page - 1) * limit;
+
   const sql = `SELECT p.id, title, content ,image, c.id AS category_id, c.name AS category, p.created_at, u.id AS author_id, u.username AS author, GROUP_CONCAT(t.name)  AS tags 
               FROM posts p
               JOIN users u ON u.id = p.author_id
@@ -118,12 +126,13 @@ const returnMypost = async (req, res) => {
               LEFT JOIN tags t ON t.id = pt.tag_id
               WHERE p.author_id = ?
               GROUP BY p.id
-              ORDER BY p.created_at DESC`;
+              ORDER BY p.created_at DESC
+              LIMIT ?,?`;
 
   try {
     const user_id = req.user?.id;
 
-    const [posts] = await pool.execute(sql, [user_id]);
+    const [posts] = await pool.execute(sql, [user_id, offset, limit]);
 
     const formattedPosts = posts?.map((p) => ({
       ...p,
@@ -339,9 +348,9 @@ const deletePost = async (req, res) => {
         .status(404)
         .json({ success: false, error: "Resource not found!" });
 
+    await conn.execute(deleteRelations, [post_id]);
     await conn.execute(deletePost, [post_id]);
     if (arrayTagIds) await conn.execute(deleteTags, arrayTagIds);
-    await conn.execute(deleteRelations, [post_id]);
 
     await conn.commit();
 
@@ -355,25 +364,21 @@ const deletePost = async (req, res) => {
     res.json({
       success: true,
       message: "Successfully deleted!",
-      placeholders,
-      arrayTagIds,
     });
   } catch (error) {
+    await conn.rollback();
     console.log("error: " + error.message);
     res.status(500).json({ success: false, error: "Server error" });
+  } finally {
+    conn.release();
   }
-};
-
-const test = (req, res) => {
-  res.send(req.query.limit);
 };
 
 module.exports = {
   createPost,
   returnPosts,
-  returnMypost,
+  returnMyposts,
   returnPost,
   updatePost,
   deletePost,
-  test,
 };
