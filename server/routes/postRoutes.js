@@ -10,7 +10,6 @@ const {
   returnMyposts,
   updatePost,
   deletePost,
-  checkQuery,
 } = require("../controllers/postController");
 
 const router = express.Router();
@@ -39,4 +38,5 @@ router.patch(
 
 router.delete("/:id", verifyAccessToken, deletePost);
 
+router.get("/", verifyAccessToken);
 module.exports = router;
