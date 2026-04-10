@@ -12,10 +12,18 @@ const verifyAccessToken = (req, res, next) => {
 
   const { error, decode } = verifyToken(token);
   if (error) {
-    return res.status(403).json({ success: false, error: "Invalid token" });
+    return res.status(401).json({ success: false, error: "Invalid token" });
   }
   req.user = decode;
   next();
 };
 
-module.exports = { verifyAccessToken };
+const verifyAdmin = (req, res, next) => {
+  const role = req.user?.role;
+
+  if (role !== "admin") {
+    return res.status(403).json({ success: false, error: "Not allowed!" });
+  }
+  next();
+};
+module.exports = { verifyAccessToken, verifyAdmin };

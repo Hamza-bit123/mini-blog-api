@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import "./auth.css";
+import { Link } from "react-router-dom";
 function Registration() {
   const [formData, setFormData] = useState({
     username: "",
@@ -102,6 +104,7 @@ function Registration() {
             />
           </div>
           <button type="submit">Create Account</button>
+          <Link to="/login">already have an account</Link>
         </form>
       </div>
     </div>

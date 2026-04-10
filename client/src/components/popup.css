@@ -1,0 +1,33 @@
+.container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.container .message {
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid var(--accent);
+    background-color: var(--primary);
+    color: var(--accent);
+    width: fit-content;
+    margin: auto;
+    position: fixed;
+    z-index: 20;
+    font-size: 1.2rem;
+    top: 60px;
+    box-shadow: 2px 2px 10px var(--accent), -2px -2px 10px var(--accent);
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        scale: 0;
+    }
+
+    to {
+        opacity: 1;
+        scale: 1;
+    }
+}

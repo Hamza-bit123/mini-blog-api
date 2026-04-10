@@ -1,18 +1,25 @@
 import React, { useState } from "react";
+import "./createPost.css";
+import * as Icon from "react-bootstrap-icons";
+import { useNavigate } from "react-router-dom";
+import Popup from "../../components/popup";
+import { RefreshToken } from "../../api/refreshToken";
 
 function CreatePost() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     title: "",
     category: "",
     tag: "",
     content: "",
   });
+  const [message, setMessage] = useState(null);
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    let token = sessionStorage.getItem("token");
     const tags = formData.tag && formData.tag.split(",");
 
     const formdata = new FormData();
@@ -22,17 +29,32 @@ function CreatePost() {
     formdata.append("image", image);
     formdata.append("content", formData.content);
 
-    const response = await fetch("http://localhost:4000/api/posts/create", {
+    let response = await fetch("http://localhost:4000/api/posts/create", {
       method: "POST",
       headers: {
-        Authorization:
-          "Bearer, eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJmdWFkQG1haWwuY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NzUyOTY1MDEsImV4cCI6MTc3NTI5ODMwMX0.tNrUbhjceBUKtLiegX69KZiHOpe_zL0_jxGALV2IMEA",
+        Authorization: `Bearer ${token}`,
       },
       body: formdata,
     });
 
+    if (response.status === 401 || response.status === 403) {
+      token = RefreshToken().accessToken;
+
+      response = await fetch("http://localhost:4000/api/posts/create", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formdata,
+      });
+    }
     const data = await response.json();
-    console.log(data);
+    if (data.success) {
+      setMessage(data.message);
+      setTimeout(() => {
+        navigate("/posts/me");
+      }, 1000);
+    } else console.log(data.error);
   };
 
   const handlChange = (e) => {
@@ -50,6 +72,15 @@ function CreatePost() {
 
   return (
     <div className="flex_vertical--container">
+      <div className="back--btn">
+        <Icon.ArrowLeftSquareFill
+          onClick={() => {
+            navigate(-1);
+          }}
+        />
+        <span>Back</span>
+      </div>
+
       <h3 className="container--title">Write a New Post</h3>
 
       <form onSubmit={handleSubmit}>
@@ -62,6 +93,7 @@ function CreatePost() {
             id="title"
             value={formData.title}
             onChange={handlChange}
+            required
           />
         </div>
         <div className="input_wrapper">
@@ -71,6 +103,7 @@ function CreatePost() {
             id="category"
             value={formData.category}
             onChange={handlChange}
+            required
           >
             <option value="">Select Category</option>
             <option value={10}>Software Architecture</option>
@@ -94,6 +127,7 @@ function CreatePost() {
             value={formData.tag}
             onChange={handlChange}
             placeholder="Enter tags separated by comma"
+            required
           />
           <div className="tags">
             <span>#javascript</span>
@@ -107,7 +141,10 @@ function CreatePost() {
             {preview ? (
               <img src={preview} alt="preview" width="300px" />
             ) : (
-              <span>Upload image Drag & Drop or choose file</span>
+              <div>
+                <Icon.CardImage size={60} />
+                <p>Upload image Drag & Drop or choose file</p>
+              </div>
             )}
           </label>
           <input
@@ -128,6 +165,7 @@ function CreatePost() {
             rows={15}
             value={formData.content}
             onChange={handlChange}
+            required
           ></textarea>
         </div>
         <div className="form__buttons">
@@ -137,6 +175,7 @@ function CreatePost() {
           <button type="submit">Publish Post</button>
         </div>
       </form>
+      {message && <Popup message={message} />}
     </div>
   );
 }

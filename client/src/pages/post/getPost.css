@@ -1,0 +1,113 @@
+.post-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 1rem;
+    color: var(--text-color);
+}
+
+.back--btn {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.post-container .post-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--heading);
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+}
+
+.post-container .meta {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    margin-bottom: 1rem;
+}
+
+.post-container .category {
+    display: inline-block;
+    background: var(--card);
+    color: var(--accent);
+    font-size: 0.75rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 999px;
+    margin-bottom: 0.6rem;
+}
+
+.post-container img {
+    width: 100%;
+    max-height: 350px;
+    object-fit: cover;
+    border-radius: 10px;
+    margin: 1rem 0;
+}
+
+.post-container .content {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    margin-bottom: 1rem;
+}
+
+.post-container .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 1rem;
+}
+
+.post-container .tag {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 999px;
+    background: rgba(34, 197, 94, 0.15);
+    color: var(--accent);
+}
+
+.post-container .share {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+}
+
+.post-container .share button {
+    border: none;
+    padding: 0.5rem 0.9rem;
+    border-radius: 6px;
+    cursor: pointer;
+    background: var(--card);
+    color: var(--text-color);
+    font-size: 0.8rem;
+    transition: 0.2s;
+}
+
+.post-container .share button:hover {
+    background: var(--accent);
+    color: #fff;
+}
+
+@media (min-width: 600px) {
+    .post-container {
+        padding: 1.5rem;
+    }
+
+    .post-container .post-title {
+        font-size: 2rem;
+    }
+
+    .post-container img {
+        max-height: 400px;
+    }
+}
+
+@media (min-width: 900px) {
+    .post-container {
+        padding: 2rem;
+    }
+
+    .post-container .content {
+        font-size: 1rem;
+    }
+}

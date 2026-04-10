@@ -1,8 +1,13 @@
 import React, { useState } from "react";
 import * as Icon from "react-bootstrap-icons";
+import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 function SideNav() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [sidenavVisible, setSidenavVisible] = useState(true);
+
   return (
     <nav className="sideNav">
       <div className="icon--container">
@@ -11,13 +16,28 @@ function SideNav() {
             <Icon.PenFill />
           </div>
           <ul className="nav--lists">
-            <li className="active">
+            <li
+              className={
+                location.pathname.includes("dashboard") ? "active" : ""
+              }
+            >
               <Icon.BarChartLineFill />
             </li>
-            <li>
+            <li className={location.pathname === "/posts" ? "active" : ""}>
+              <Icon.Signpost2Fill />
+            </li>
+
+            <li
+              className={location.pathname === "/posts/me" ? "active" : ""}
+              onClick={() => {
+                navigate("/posts/me");
+              }}
+            >
               <Icon.SignpostFill />
             </li>
-            <li>
+            <li
+              className={location.pathname === "/posts/create" ? "active" : ""}
+            >
               <Icon.NodePlusFill />
             </li>
           </ul>
@@ -36,9 +56,43 @@ function SideNav() {
           <div className="top">
             <div className="logo">Mini Blog</div>
             <ul className="nav--lists">
-              <li className="active">Dashboard</li>
-              <li>My posts</li>
-              <li>Create post</li>
+              <li
+                className={
+                  location.pathname.includes("dashboard") ? "active" : ""
+                }
+                onClick={() => {
+                  navigate("/");
+                }}
+              >
+                Dashboard
+              </li>
+              <li
+                className={location.pathname === "/posts" ? "active" : ""}
+                onClick={() => {
+                  navigate("/posts");
+                }}
+              >
+                Posts
+              </li>
+
+              <li
+                className={location.pathname === "/posts/me" ? "active" : ""}
+                onClick={() => {
+                  navigate("/posts/me");
+                }}
+              >
+                My posts
+              </li>
+              <li
+                className={
+                  location.pathname === "/posts/create" ? "active" : ""
+                }
+                onClick={() => {
+                  navigate("posts/create");
+                }}
+              >
+                Create post
+              </li>
             </ul>
           </div>
           <ul className="sidenav-bottom">
@@ -51,7 +105,7 @@ function SideNav() {
         className={sidenavVisible ? "menu-icon" : "menu-icon open-menu"}
         onClick={() => setSidenavVisible(!sidenavVisible)}
       >
-        <Icon.CaretLeftFill size={30} />
+        <Icon.CaretLeftFill size={30} color="white" />
       </button>
     </nav>
   );

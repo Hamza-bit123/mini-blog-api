@@ -1,14 +1,15 @@
-import React, { useEffect, useState } from "react";
-import "./getPosts.css";
+import React, { useState, useEffect } from "react";
 import Posts from "../../components/posts";
 import { fetchWithAuth } from "../../api/api";
 
-const GetPosts = () => {
+function GetMyPosts() {
   const [posts, setPosts] = useState(null);
-
   useEffect(() => {
     const fetchData = async () => {
-      const response = await fetchWithAuth("http://localhost:4000/api/posts/");
+      const response = await fetchWithAuth(
+        "http://localhost:4000/api/posts/me",
+      );
+
       const data = await response.json();
       setPosts(data.data);
     };
@@ -18,9 +19,9 @@ const GetPosts = () => {
 
   return (
     <div className="posts-page">
-      <h3 className="section--title">Our Blog</h3>
+      <h3 className="section--title">My Posts</h3>
       <p className="section--description">
-        Discover articles, tips, and updates on topics that matter to you.
+        Manage and explore all the posts you've created in MiniBlog.
       </p>
       <div className="filter-bar">
         <select
@@ -49,9 +50,9 @@ const GetPosts = () => {
           // onChange={handleChange}
         />
       </div>
-      <Posts props={{ posts: posts, type: "all" }} />
+      <Posts props={{ posts: posts, type: "me" }} />
     </div>
   );
-};
+}
 
-export default GetPosts;
+export default GetMyPosts;

@@ -1,10 +1,14 @@
 import React from "react";
+import * as Icon from "react-bootstrap-icons";
 
 function Home() {
   return (
     <>
       <header className="header">
-        <div className="logo">Mini Blog</div>
+        <div className="logo">
+          <Icon.PenFill />
+          Mini Blog
+        </div>
         <div className="header--buttons">
           <button type="button">LogIn</button>
           <button type="button">Sign Up</button>
@@ -31,7 +35,9 @@ function Home() {
         <div className="features--grid">
           <div className="feature--card">
             <div className="feature--icon">
-              <span>8</span>
+              <span>
+                <Icon.Signpost2Fill />
+              </span>
             </div>
             <h4 className="card--title">Rich Post Creation</h4>
             <p className="card--description">
@@ -41,7 +47,9 @@ function Home() {
           </div>
           <div className="feature--card">
             <div className="feature--icon">
-              <span>8</span>
+              <span>
+                <Icon.TagsFill />
+              </span>
             </div>
             <h4 className="card--title">Categories & Tags</h4>
             <p className="card--description">
@@ -51,7 +59,9 @@ function Home() {
           </div>
           <div className="feature--card">
             <div className="feature--icon">
-              <span>8</span>
+              <span>
+                <Icon.GraphUpArrow />
+              </span>
             </div>
             <h4 className="card--title">Grow and Audience</h4>
             <p className="card--description">

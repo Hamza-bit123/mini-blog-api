@@ -1,55 +1,57 @@
 import React, { useEffect, useState } from "react";
+import * as Icon from "react-bootstrap-icons";
+import { useNavigate } from "react-router-dom";
+import "./userDashboard.css";
+import { fetchWithAuth } from "../../api/api";
 
 function UserDashboard() {
   const [data, setData] = useState(null);
-
+  const navigate = useNavigate();
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const response = await fetch("http://localhost:4000/api/dashboard", {
-          method: "GET",
-          headers: {
-            Authorization:
-              "Bearer, eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJmdWFkQG1haWwuY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NzU0NjYzMTgsImV4cCI6MTc3NTQ2ODExOH0.WjXCNkXoVGl9pVvCKomuIZaEyzlPquSLcu1_jYx4sy0",
-          },
-        });
-        const data = await response.json();
-        setData(data);
-      } catch (err) {
-        console.log(err);
-      }
+      const response = await fetchWithAuth(
+        "http://localhost:4000/api/dashboard",
+      );
+      const data = await response.json();
+      setData(data);
     };
 
     fetchData();
   }, []);
+
   return (
     <div className="dashboard--wrapper">
       <h3>Dashboard</h3>
-      <div className="dashboard--menu">
-        <button className="active">Overview</button>
-        <button>My Posts</button>
-        <button>Create Posts </button>
-        <button>Settings</button>
-      </div>
       <section className="welcome--section">
-        <h2 className="welcome--title">Welcome back, Ahmed</h2>
+        <h2 className="welcome--title">
+          Welcome back, {data?.author || "[John]"}
+        </h2>
         <p className="welcome--description">
           Here's what is happning with your blog today.
         </p>
       </section>
       <section className="stats--grid">
         <div className="stat--card">
-          <span className="stat--label">Total Posts</span>
+          <span className="stat--label">
+            Total Posts
+            <Icon.Signpost2Fill size={20} />
+          </span>
           <span className="stat--value">{data?.stats.total_posts || 0}</span>
         </div>
         <div className="stat--card">
-          <span className="stat--label">Catagories</span>
+          <span className="stat--label">
+            Catagories
+            <Icon.DistributeHorizontal size={20} />
+          </span>
           <span className="stat--value">
             {data?.stats.total_categories || 0}
           </span>
         </div>
         <div className="stat--card">
-          <span className="stat--label">Total Tags</span>
+          <span className="stat--label">
+            Total Tags
+            <Icon.TagsFill size={20} />
+          </span>
           <span className="stat--value">{data?.stats.total_tags || 0}</span>
         </div>
       </section>
@@ -61,8 +63,10 @@ function UserDashboard() {
               <span>{data?.top_categories[0].name || "category"}</span>
               <span>
                 {`${
-                  (data?.top_categories[0].post_count * 100) /
-                    data?.stats.total_categories || 0
+                  Math.ceil(
+                    (data?.top_categories[0].post_count * 100) /
+                      data?.stats.total_categories,
+                  ) || 0
                 }%`}
               </span>
             </div>
@@ -82,8 +86,10 @@ function UserDashboard() {
             <div className="chart--info">
               <span>{data?.top_categories[1].name || "category"}</span>
               <span>{`${
-                (data?.top_categories[1].post_count * 100) /
-                  data?.stats.total_categories || 0
+                Math.ceil(
+                  (data?.top_categories[1].post_count * 100) /
+                    data?.stats.total_categories,
+                ) || 0
               }%`}</span>
             </div>
             <div className="chart--bar">
@@ -102,8 +108,10 @@ function UserDashboard() {
             <div className="chart--info">
               <span>{data?.top_categories[2].name || "category"}</span>
               <span>{`${
-                (data?.top_categories[2].post_count * 100) /
-                  data?.stats.total_categories || 0
+                Math.ceil(
+                  (data?.top_categories[2].post_count * 100) /
+                    data?.stats.total_categories,
+                ) || 0
               }%`}</span>
             </div>
             <div className="chart--bar">
@@ -122,12 +130,26 @@ function UserDashboard() {
       </section>
       <div className="section--header">
         <h3>Recent Posts</h3>
-        <button className="btn createPost--btn">New Post</button>
+        <button
+          className="btn createPost--btn"
+          onClick={() => {
+            navigate("/posts/create");
+          }}
+        >
+          <Icon.Plus size={20} />
+          New Post
+        </button>
       </div>
       {data && (
         <ul className="recent--posts">
           {data.recent_posts?.map((post) => (
-            <li className="post_item" key={post.id}>
+            <li
+              className="post_item"
+              key={post.id}
+              onClick={() => {
+                navigate(`/posts/${post.id}`);
+              }}
+            >
               <div className="post--image_preview">
                 <img
                   src={`http://localhost:4000/uploads/${post.image}`}
@@ -140,8 +162,8 @@ function UserDashboard() {
                   <span className="category">{post.category}</span>
                   <span className="date">
                     {" "}
-                    {`| ${new Date(post.created_at).toLocaleDateString("en-UK", { month: "long" })} 
-                        ${new Date(post.created_at).toLocaleDateString("en-UK", { day: "2-digit" })}, 
+                    {`| ${new Date(post.created_at).toLocaleDateString("en-UK", { month: "long" })}
+                        ${new Date(post.created_at).toLocaleDateString("en-UK", { day: "2-digit" })},
                         ${new Date(post.created_at).toLocaleDateString("en-UK", { year: "numeric" })}`}
                   </span>
                 </div>

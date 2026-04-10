@@ -27,7 +27,7 @@ const returnUserDashboard = async (req, res) => {
                                   ORDER BY post_count DESC
                                   LIMIT 3
                               `;
-  const getAuthorSql = `SELECT username FROM users WHERE id = 1`;
+  const getAuthorSql = `SELECT username FROM users WHERE id = ?`;
 
   const [total_tags] = await pool.execute(getTagsSql, [req.user?.id]);
   const [total_posts_categories] = await pool.execute(getTotalPosts, [
@@ -42,9 +42,9 @@ const returnUserDashboard = async (req, res) => {
     total_tags: total_tags[0].total_tags,
   };
 
-  const author = pool.execute(getAuthorSql);
+  const [author] = await pool.execute(getAuthorSql, [req.user?.id]);
 
-  res.json({ stats, top_categories, recent_posts, author });
+  res.json({ stats, top_categories, recent_posts, author: author[0].username });
 };
 
 module.exports = { returnUserDashboard };

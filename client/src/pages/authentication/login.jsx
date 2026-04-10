@@ -1,7 +1,11 @@
 import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import "./auth.css";
 
 function Login() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: "", password: "" });
+  const [error, setError] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -13,6 +17,7 @@ function Login() {
 
     const response = await fetch("http://localhost:4000/api/auth/login", {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
@@ -20,14 +25,17 @@ function Login() {
     });
 
     const data = await response.json();
-    console.log(data, response.status);
+    if (data.success) {
+      sessionStorage.setItem("token", data.accessToken);
+      navigate("/");
+    } else {
+      sessionStorage.removeItem("token");
+      setError(data.error);
+    }
   };
   return (
     <div className="auth_container">
       <div className="auth_left">
-        <div className="image">
-          <img src="../assets/logo.png" alt="logo" width={50} />
-        </div>
         <h2 className="auth_left--title">MiniBlog</h2>
         <p className="auth_left--description description">
           Write stories, share ideas, and explore blogs from developers around
@@ -35,7 +43,7 @@ function Login() {
         </p>
       </div>
       <div className="auth_form_container">
-        <form action="" className="login_form" onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit}>
           <h3 className="form--title">Login to your Account</h3>
           <div className="auth--input_wrapper">
             <label htmlFor="email">Email</label>
@@ -58,7 +66,8 @@ function Login() {
             />
           </div>
           <button type="submit">Login</button>
-          <a href="./registration.jsx">or create a new account</a>
+          <Link to="/register">or create new account</Link>
+          {error && <span className="error">{error}</span>}
         </form>
       </div>
     </div>
