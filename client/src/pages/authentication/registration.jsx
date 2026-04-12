@@ -1,13 +1,16 @@
 import React, { useState } from "react";
 import "./auth.css";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import Popup from "../../components/popup";
 function Registration() {
   const [formData, setFormData] = useState({
     username: "",
     email: "",
     password: "",
   });
-  const [error, setError] = useState("");
+  const [error, setError] = useState(null);
+  const [message, setMessage] = useState(null);
+  const navigate = useNavigate();
 
   //submit form
   const handleSignup = async (e) => {
@@ -25,6 +28,17 @@ function Registration() {
     });
 
     const data = await response.json();
+    if (data.success) {
+      setMessage({ value: data.message, type: "success" });
+      setTimeout(() => {
+        navigate("/login");
+      }, 1000);
+    } else {
+      setMessage({ value: data.error, type: "error" });
+      setTimeout(() => {
+        setMessage(null);
+      }, 1000);
+    }
     console.log(data, response.status);
   };
 
@@ -50,6 +64,7 @@ function Registration() {
     }
     return 1;
   };
+
   return (
     <div className="auth_container">
       <div className="auth_left">
@@ -104,9 +119,11 @@ function Registration() {
             />
           </div>
           <button type="submit">Create Account</button>
+          {error && <span className="error">{error}</span>}
           <Link to="/login">already have an account</Link>
         </form>
       </div>
+      {message && <Popup message={message} />}
     </div>
   );
 }

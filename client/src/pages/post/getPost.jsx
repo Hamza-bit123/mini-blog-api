@@ -5,6 +5,7 @@ import { ArrowLeftSquareFill, Share } from "react-bootstrap-icons";
 import { fetchWithAuth } from "../../api/api";
 import { UserContext } from "../../context/userContext";
 import * as Icon from "react-bootstrap-icons";
+import Popup from "../../components/popup";
 
 function GetPost() {
   const [post, setPost] = useState(null);
@@ -12,15 +13,44 @@ function GetPost() {
   const navigate = useNavigate();
   const { user } = useContext(UserContext);
   const dialogRef = useRef(null);
+  const [message, setMessage] = useState(null);
 
   const handleClick = () => {
     dialogRef.current.showModal();
   };
 
+  const handleDeletePost = async (e) => {
+    e.preventDefault();
+
+    const response = await fetchWithAuth(
+      `http://localhost:4000/api/posts/${id}`,
+      { method: "DELETE" },
+    );
+
+    const data = await response.json();
+    dialogRef.current.close();
+    if (data.success) {
+      setMessage({ value: data.message, type: "success" });
+      dialogRef.current.close();
+      setTimeout(() => {
+        navigate("/posts/me");
+      }, 1000);
+    } else {
+      setMessage({ value: data.error, type: "error" });
+      setTimeout(() => {
+        setMessage(null);
+      }, 2000);
+    }
+  };
+
+  const handleUnshowDialog = () => {
+    dialogRef.current.close();
+  };
   useEffect(() => {
     const fechData = async () => {
       const response = await fetchWithAuth(
         `http://localhost:4000/api/posts/${id}`,
+        { method: "GET" },
       );
       const data = await response.json();
       if (data.success) {
@@ -61,9 +91,15 @@ function GetPost() {
             </div>
           ))}
         </div>
-        {user?.id === post.author_id && (
+        {(user?.id === post.author_id || user.role === "admin") && (
           <div className="actions-buttons">
-            <button type="button" className="edit--btn">
+            <button
+              type="button"
+              className="edit--btn"
+              onClick={() => {
+                navigate(`/posts/create/${post.id}`);
+              }}
+            >
               <Icon.VectorPen />
               Edit
             </button>
@@ -81,13 +117,17 @@ function GetPost() {
         </div>
 
         <dialog className="delete--post-dialog" ref={dialogRef}>
-          <form action="dialog">
+          <form action="dialog" onSubmit={handleDeletePost}>
             <span>are your sure you want to delete this post?</span>
             <div className="buttons">
-              <button type="button" className="cancel">
+              <button
+                type="button"
+                className="cancel"
+                onClick={handleUnshowDialog}
+              >
                 Cancel
               </button>
-              <button type="button" className="no">
+              <button type="button" className="no" onClick={handleUnshowDialog}>
                 No
               </button>
               <button type="submit" className="yes">
@@ -96,6 +136,7 @@ function GetPost() {
             </div>
           </form>
         </dialog>
+        {message && <Popup message={message} />}
       </div>
     )
   );

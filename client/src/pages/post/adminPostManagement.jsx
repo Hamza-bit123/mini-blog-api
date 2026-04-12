@@ -1,18 +1,53 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as Icon from "react-bootstrap-icons";
+import { fetchWithAuth } from "../../api/api";
+import { useNavigate } from "react-router-dom";
+import Popup from "../../components/popup";
+import "./adminPostManagement.css";
 
 function AdminPostManagement() {
   const [posts, setPosts] = useState(null);
   const [menu, setMenu] = useState(null);
-  const [filter, setFilter] = useState({ categories: 0, search: "" });
+  // const [filter, setFilter] = useState({ categories: 0, search: "" });
+  const navigate = useNavigate();
+  const dialogRef = useRef();
+  const [postId, setPostId] = useState(0);
+  const [message, setMessage] = useState({ value: "", type: "" });
 
   const menuRef = useRef(null);
   const moreBtnRef = useRef(null);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFilter((prev) => ({ ...prev, [name]: value }));
+  const handleUnshowDialog = () => {
+    dialogRef.current.close();
   };
+
+  const handleDeletePost = async (e) => {
+    e.preventDefault();
+
+    const response = await fetchWithAuth(
+      `http://localhost:4000/api/posts/${postId}`,
+      { method: "DELETE" },
+    );
+
+    const data = await response.json();
+    dialogRef.current.close();
+    if (data.success) {
+      setMessage({ value: data.message, type: "success" });
+      dialogRef.current.close();
+      setTimeout(() => {
+        navigate("/posts/me");
+      }, 1000);
+    } else {
+      setMessage({ value: data.error, type: "error" });
+      setTimeout(() => {
+        setMessage(null);
+      }, 2000);
+    }
+  };
+  // const handleChange = (e) => {
+  //   const { name, value } = e.target;
+  //   setFilter((prev) => ({ ...prev, [name]: value }));
+  // };
   const handleClick = (id) => {
     setMenu((prev) => (prev === id ? null : id));
   };
@@ -34,16 +69,12 @@ function AdminPostManagement() {
 
     // fetching data from server
     const fetchData = async () => {
-      const response = await fetch("http://localhost:4000/api/posts/", {
+      const response = await fetchWithAuth("http://localhost:4000/api/posts/", {
         method: "GET",
-        headers: {
-          Authorization:
-            "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiZW1haWwiOiJtdWF6QG1haWwuY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NzU1OTY1NTYsImV4cCI6MTc3NTU5ODM1Nn0.rVnLOR315Boh0hBxBqaoq9kTUJ0eL7nPHEyseuVr0ns",
-        },
       });
 
       const data = await response.json();
-      setPosts(data.data);
+      setPosts(data.data.posts);
     };
 
     fetchData();
@@ -57,11 +88,11 @@ function AdminPostManagement() {
     <section className="manage-posts--section">
       <div className="section--header">
         <h3 className="section--title">Manage Posts</h3>
-        <button type="button" className="btn createPost--btn">
+        {/* <button type="button" className="btn createPost--btn">
           <Icon.Plus size={20} /> Create Post
-        </button>
+        </button> */}
       </div>
-      <div className="section--header">
+      {/* <div className="section--header">
         <select
           name="categories"
           value={filter.categories}
@@ -87,15 +118,17 @@ function AdminPostManagement() {
           value={filter.search}
           onChange={handleChange}
         />
-      </div>
+      </div> */}
       {posts && (
         <table className="posts--table">
           <thead>
-            <th></th>
-            <th>Title</th>
-            <th>Author</th>
-            <th>Date</th>
-            <th>Actions</th>
+            <tr>
+              <th></th>
+              <th>Title</th>
+              <th>Author</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
           </thead>
           <tbody>
             {posts.map((post, index) => (
@@ -119,13 +152,18 @@ function AdminPostManagement() {
                 <td>
                   {menu === index && (
                     <div className="action--menu" ref={menuRef}>
-                      <div>
+                      <div
+                        onClick={() => {
+                          navigate(`/posts/${post.id}`);
+                        }}
+                      >
                         <Icon.EyeSlash /> View
                       </div>
-                      <div>
-                        <Icon.PencilSquare /> Edit
-                      </div>
-                      <div>
+                      <div
+                        onClick={() => {
+                          dialogRef.current.showModal();
+                        }}
+                      >
                         <Icon.Trash /> Delete
                       </div>
                     </div>
@@ -134,6 +172,7 @@ function AdminPostManagement() {
                   <Icon.ThreeDots
                     className={menu === index ? "more-btn active" : "more-btn"}
                     onClick={() => {
+                      setPostId(post.id);
                       handleClick(index);
                     }}
                     ref={moreBtnRef}
@@ -144,6 +183,27 @@ function AdminPostManagement() {
           </tbody>
         </table>
       )}
+      <dialog className="delete--post-dialog" ref={dialogRef}>
+        <form action="dialog" onSubmit={handleDeletePost}>
+          <span>are your sure you want to delete this post?</span>
+          <div className="buttons">
+            <button
+              type="button"
+              className="cancel"
+              onClick={handleUnshowDialog}
+            >
+              Cancel
+            </button>
+            <button type="button" className="no" onClick={handleUnshowDialog}>
+              No
+            </button>
+            <button type="submit" className="yes">
+              Yes
+            </button>
+          </div>
+        </form>
+      </dialog>
+      {message.value && <Popup message={message} />}
     </section>
   );
 }

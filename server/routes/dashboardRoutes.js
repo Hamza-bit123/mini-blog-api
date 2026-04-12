@@ -1,8 +1,14 @@
 const express = require("express");
-const { returnUserDashboard } = require("../controllers/dashboardController");
-const { verifyAccessToken } = require("../middleware/authMiddleware");
+const {
+  returnUserDashboard,
+  returnAdminDashboard,
+} = require("../controllers/dashboardController");
+const {
+  verifyAccessToken,
+  verifyAdmin,
+} = require("../middleware/authMiddleware");
 const router = express.Router();
 
-router.get("/", verifyAccessToken, returnUserDashboard);
-
+router.get("/user", verifyAccessToken, returnUserDashboard);
+router.get("/admin", verifyAccessToken, verifyAdmin, returnAdminDashboard);
 module.exports = router;

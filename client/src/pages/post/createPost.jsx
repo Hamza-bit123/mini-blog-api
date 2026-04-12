@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import "./createPost.css";
 import * as Icon from "react-bootstrap-icons";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Popup from "../../components/popup";
-import { RefreshToken } from "../../api/refreshToken";
+import { useEffect } from "react";
+import { fetchWithAuth } from "../../api/api";
 
 function CreatePost() {
+  const { id } = useParams();
+
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     title: "",
@@ -19,42 +22,39 @@ function CreatePost() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    let token = sessionStorage.getItem("token");
+
     const tags = formData.tag && formData.tag.split(",");
 
     const formdata = new FormData();
     formdata.append("title", formData.title);
     formdata.append("category_id", formData.category);
     tags.forEach((tag) => formdata.append("tags", tag));
-    formdata.append("image", image);
+    image && formdata.append("image", image);
     formdata.append("content", formData.content);
 
-    let response = await fetch("http://localhost:4000/api/posts/create", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    const url = id
+      ? `http://localhost:4000/api/posts/${id}`
+      : "http://localhost:4000/api/posts/create";
+    const method = id ? "PATCH" : "POST";
+
+    let response = await fetchWithAuth(url, {
+      method: method,
       body: formdata,
     });
 
-    if (response.status === 401 || response.status === 403) {
-      token = RefreshToken().accessToken;
-
-      response = await fetch("http://localhost:4000/api/posts/create", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formdata,
-      });
-    }
     const data = await response.json();
     if (data.success) {
-      setMessage(data.message);
+      setMessage({ value: data.message, type: "success" });
       setTimeout(() => {
         navigate("/posts/me");
       }, 1000);
-    } else console.log(data.error);
+    } else {
+      setMessage({ value: data.error, type: "error" });
+      setTimeout(() => {
+        setMessage(null);
+        if (response.status === 404) navigate("/posts/me");
+      }, 1000);
+    }
   };
 
   const handlChange = (e) => {
@@ -70,18 +70,43 @@ function CreatePost() {
     }
   };
 
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!id) return;
+      const response = await fetchWithAuth(
+        `http://localhost:4000/api/posts/${id}`,
+        { method: "GET" },
+      );
+
+      const data = await response.json();
+      if (data.success) {
+        setFormData({
+          title: data.data.title,
+          content: data.data.content,
+          category: data.data.category_id,
+          tag: data.data?.tags.toString(),
+        });
+        setPreview(`http://localhost:4000/uploads/${data.data.image}`);
+      }
+    };
+
+    fetchData();
+  }, [id]);
   return (
     <div className="flex_vertical--container">
-      <div className="back--btn">
-        <Icon.ArrowLeftSquareFill
-          onClick={() => {
-            navigate(-1);
-          }}
-        />
+      <div
+        className="back--btn"
+        onClick={() => {
+          navigate(-1);
+        }}
+      >
+        <Icon.ArrowLeftSquareFill />
         <span>Back</span>
       </div>
 
-      <h3 className="container--title">Write a New Post</h3>
+      <h3 className="container--title">
+        {id ? "Edit Post" : "Write a New Post"}
+      </h3>
 
       <form onSubmit={handleSubmit}>
         <div className="input_wrapper">
@@ -169,10 +194,7 @@ function CreatePost() {
           ></textarea>
         </div>
         <div className="form__buttons">
-          <button type="button" className="preview--btn">
-            Preview
-          </button>
-          <button type="submit">Publish Post</button>
+          <button type="submit">{id ? "Edit Post" : "Publish Post"}</button>
         </div>
       </form>
       {message && <Popup message={message} />}

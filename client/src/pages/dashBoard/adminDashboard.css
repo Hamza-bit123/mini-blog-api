@@ -1,0 +1,83 @@
+.dashboard--wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    width: 100%;
+}
+
+.dashboard--wrapper>h3 {
+    text-align: right;
+}
+
+.admin--dashboard--menu {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+.admin--dashboard--menu button {
+    display: flex;
+    gap: 10px;
+    background: transparent;
+    color: var(--text-color);
+    font-size: 1rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 5px;
+    opacity: 0.9;
+    white-space: nowrap;
+}
+
+.admin--dashboard--menu .active {
+    background: transparent !important;
+    border-bottom: 3px solid var(--accent);
+    color: var(--text-color);
+
+}
+
+.admin--dashboard--menu button:hover {
+    box-shadow: none;
+    border-bottom: 3px solid var(--accent);
+}
+
+.dashboard-content {
+    margin-top: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+    width: 100%;
+}
+
+.stat--card,
+.chart--card {
+    border-radius: 10px;
+}
+
+.users--table {
+    margin-top: var(--space-md);
+    border-collapse: collapse;
+    overflow: hidden;
+    color: var(--text-color);
+}
+
+
+.users--table td,
+th {
+    padding: var(--space-sm);
+    border-bottom: 1px solid var(--text-color-light);
+    text-align: left;
+    font-size: 0.9;
+    opacity: 0.8;
+    line-height: 1.5;
+}
+
+.users--table th {
+    background-color: var(--card);
+    color: var(--heading);
+}
+
+.recent--users {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 5rem;
+}

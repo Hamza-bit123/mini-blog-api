@@ -1,17 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Navigate, Outlet } from "react-router-dom";
-import SideNav from "./sideNav";
-import { UserContext } from "../context/userContext";
 import { fetchWithAuth } from "../api/api";
+import { Navigate } from "react-router-dom";
 
-function ProtectedLayout() {
+function DashboardRedirect() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = sessionStorage.getItem("token");
-    if (!token) return <Navigate to="/login" />;
-
     const fetchData = async () => {
       try {
         const response = await fetchWithAuth("http://localhost:4000/api/me", {
@@ -21,7 +16,7 @@ function ProtectedLayout() {
         setUser(data.user);
       } catch (error) {
         alert("Try again later!");
-        console.log("error from protected: " + error);
+        console.log(error);
       } finally {
         setLoading(false);
       }
@@ -30,14 +25,9 @@ function ProtectedLayout() {
     fetchData();
   }, []);
 
-  return (
-    <UserContext.Provider value={{ user, setUser, loading }}>
-      <section className="layout">
-        <SideNav />
-        <Outlet />
-      </section>
-    </UserContext.Provider>
-  );
+  if (loading) return <div>Loading</div>;
+  if (user?.role === "admin") return <Navigate to="/admin" />;
+  return <Navigate to="/dashboard" />;
 }
 
-export default ProtectedLayout;
+export default DashboardRedirect;

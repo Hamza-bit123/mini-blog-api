@@ -1,0 +1,103 @@
+.manage-posts--section {
+    width: 100%;
+    background-color: var(--secondary);
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+.manage-posts--section .createPost--btn {
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.manage-posts--section select,
+.posts-page select {
+    width: fit-content;
+    font-size: var(--text-size-sm);
+}
+
+input[type="search"] {
+    padding: 8px 12px;
+    background-color: var(--primary);
+    border-radius: 5px;
+    border: 1px solid var(--text-color);
+    outline: none;
+    width: fit-content;
+}
+
+.posts--table {
+    border-collapse: collapse;
+    overflow: hidden;
+    color: var(--text-color);
+}
+
+
+.posts--table td,
+th {
+    padding: var(--space-sm);
+    border-bottom: 1px solid var(--text-color-light);
+    text-align: left;
+    font-size: 0.9;
+    opacity: 0.8;
+    line-height: 1.5;
+}
+
+.posts--table tr td:nth-child(2):hover {
+    cursor: pointer;
+}
+
+.posts--table th {
+    background-color: var(--card);
+    color: var(--heading);
+}
+
+.posts--table tr td:last-child {
+    position: relative;
+    opacity: 1;
+}
+
+.active {
+    color: var(--accent);
+}
+
+.manage-posts--section .action--menu {
+    background-color: var(--accent);
+    padding: 8px;
+    color: var(--primary);
+    border-radius: 10px;
+    width: fit-content;
+    box-shadow: 0px 0px 2px 0.01px var(--text-color);
+    position: absolute;
+    z-index: 9;
+    top: -50px;
+    left: -90px;
+}
+
+.manage-posts--section .action--menu div {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: 3px 0;
+    font-size: 0.9rem;
+}
+
+.manage-posts--section .action--menu div:hover,
+.more-btn:hover {
+    cursor: pointer;
+}
+
+@media (max-width: 768px) {
+    html {
+        font-size: 15px;
+    }
+}
+
+@media (max-width: 425xp) {
+    html {
+        font-size: 14px;
+    }
+}

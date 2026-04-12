@@ -99,14 +99,20 @@ const returnPosts = async (req, res) => {
               ORDER BY p.created_at DESC
               LIMIT ?,?`;
 
+    const totalPostsSql = `SELECT COUNT(id) AS total FROM posts`;
+
     const [posts] = await pool.execute(sql, [offset, limit]);
+    const [totalPosts] = await pool.execute(totalPostsSql);
 
     const formattedPosts = posts?.map((p) => ({
       ...p,
       tags: p.tags ? p.tags.split(",") : [],
     }));
 
-    res.json({ success: true, data: formattedPosts });
+    res.json({
+      success: true,
+      data: { posts: formattedPosts, totalPosts: totalPosts[0].total },
+    });
   } catch (error) {
     console.log("Error: " + error.message);
     res.status(500).json({ success: false, error: "Server Error" });
@@ -308,6 +314,7 @@ const updatePost = async (req, res) => {
 
 const deletePost = async (req, res) => {
   const post_id = req.params.id;
+  const role = req.user.role;
   const user_id = req.user.id;
   let placeholders;
   let arrayTagIds;
@@ -330,8 +337,7 @@ const deletePost = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 
-  const getPostSql =
-    "SELECT id, image FROM posts WHERE id = ?  AND author_id = ?";
+  const getPostSql = "SELECT id, author_id, image FROM posts WHERE id = ?";
   const deletePost = "DELETE FROM posts WHERE id = ?";
   const deleteRelations = "DELETE FROM post_tags WHERE post_id = ?";
   const deleteTags = `DELETE FROM tags WHERE id IN (${placeholders})`;
@@ -341,16 +347,19 @@ const deletePost = async (req, res) => {
   await conn.beginTransaction();
 
   try {
-    const [post] = await conn.execute(getPostSql, [post_id, user_id]);
+    const [post] = await conn.execute(getPostSql, [post_id]);
 
     if (post.length === 0)
       return res
         .status(404)
         .json({ success: false, error: "Resource not found!" });
 
+    if (role !== "admin" && post[0].author_id !== user_id) {
+      return res.status(403).json({ success: false, error: "Forbidden" });
+    }
     await conn.execute(deleteRelations, [post_id]);
     await conn.execute(deletePost, [post_id]);
-    if (arrayTagIds) await conn.execute(deleteTags, arrayTagIds);
+    if (arrayTagIds.length) await conn.execute(deleteTags, arrayTagIds);
 
     await conn.commit();
 

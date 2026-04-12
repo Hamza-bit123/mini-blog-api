@@ -3,14 +3,17 @@ import * as Icon from "react-bootstrap-icons";
 import { useNavigate } from "react-router-dom";
 import "./userDashboard.css";
 import { fetchWithAuth } from "../../api/api";
+import { UserContext } from "../../context/userContext";
 
 function UserDashboard() {
   const [data, setData] = useState(null);
   const navigate = useNavigate();
+
   useEffect(() => {
     const fetchData = async () => {
       const response = await fetchWithAuth(
-        "http://localhost:4000/api/dashboard",
+        "http://localhost:4000/api/dashboard/user",
+        { method: "GET" },
       );
       const data = await response.json();
       setData(data);
@@ -24,7 +27,7 @@ function UserDashboard() {
       <h3>Dashboard</h3>
       <section className="welcome--section">
         <h2 className="welcome--title">
-          Welcome back, {data?.author || "[John]"}
+          Welcome back, Dear {data?.user.author || "user"}
         </h2>
         <p className="welcome--description">
           Here's what is happning with your blog today.
@@ -36,7 +39,7 @@ function UserDashboard() {
             Total Posts
             <Icon.Signpost2Fill size={20} />
           </span>
-          <span className="stat--value">{data?.stats.total_posts || 0}</span>
+          <span className="stat--value">{data?.stats?.total_posts || 0}</span>
         </div>
         <div className="stat--card">
           <span className="stat--label">
@@ -60,11 +63,11 @@ function UserDashboard() {
           <h3 className="chart--title">Top Categories</h3>
           <div className="chart">
             <div className="chart--info">
-              <span>{data?.top_categories[0].name || "category"}</span>
+              <span>{data?.top_categories[0]?.name || "category"}</span>
               <span>
                 {`${
                   Math.ceil(
-                    (data?.top_categories[0].post_count * 100) /
+                    (data?.top_categories[0]?.post_count * 100) /
                       data?.stats.total_categories,
                   ) || 0
                 }%`}
@@ -75,7 +78,7 @@ function UserDashboard() {
                 className="active--top"
                 style={{
                   width: `${
-                    (data?.top_categories[0].post_count * 100) /
+                    (data?.top_categories[0]?.post_count * 100) /
                       data?.stats.total_categories || 0
                   }%`,
                 }}
@@ -84,10 +87,10 @@ function UserDashboard() {
           </div>
           <div className="chart">
             <div className="chart--info">
-              <span>{data?.top_categories[1].name || "category"}</span>
+              <span>{data?.top_categories[1]?.name || "category"}</span>
               <span>{`${
                 Math.ceil(
-                  (data?.top_categories[1].post_count * 100) /
+                  (data?.top_categories[1]?.post_count * 100) /
                     data?.stats.total_categories,
                 ) || 0
               }%`}</span>
@@ -97,7 +100,7 @@ function UserDashboard() {
                 className="active--middle"
                 style={{
                   width: `${
-                    (data?.top_categories[1].post_count * 100) /
+                    (data?.top_categories[1]?.post_count * 100) /
                       data?.stats.total_categories || 0
                   }%`,
                 }}
@@ -106,10 +109,10 @@ function UserDashboard() {
           </div>
           <div className="chart">
             <div className="chart--info">
-              <span>{data?.top_categories[2].name || "category"}</span>
+              <span>{data?.top_categories[2]?.name || "category"}</span>
               <span>{`${
                 Math.ceil(
-                  (data?.top_categories[2].post_count * 100) /
+                  (data?.top_categories[2]?.post_count * 100) /
                     data?.stats.total_categories,
                 ) || 0
               }%`}</span>
@@ -119,7 +122,7 @@ function UserDashboard() {
                 className="active--bottom"
                 style={{
                   width: `${
-                    (data?.top_categories[2].post_count * 100) /
+                    (data?.top_categories[2]?.post_count * 100) /
                       data?.stats.total_categories || 0
                   }%`,
                 }}
@@ -140,6 +143,7 @@ function UserDashboard() {
           New Post
         </button>
       </div>
+
       {data && (
         <ul className="recent--posts">
           {data.recent_posts?.map((post) => (

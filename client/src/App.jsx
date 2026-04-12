@@ -1,6 +1,6 @@
 import "./App.css";
 import "./style/style.css";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 
 import Login from "./pages/authentication/login";
 import Registration from "./pages/authentication/registration";
@@ -8,20 +8,21 @@ import CreatePost from "./pages/post/createPost";
 import GetPosts from "./pages/post/getPosts";
 import GetPost from "./pages/post/getPost";
 import Home from "./pages/home";
-import SideNav from "./components/sideNav";
 import AdminPostManagement from "./pages/post/adminPostManagement";
-import Layout from "./pages/layout";
 import ProtectedLayout from "./components/protectedLayout";
 import UserDashboard from "./pages/dashBoard/userDashboard";
 import GetMyPosts from "./pages/post/getMyPosts";
-import Tyr from "./tyr";
+import AdminDashboard from "./pages/dashBoard/adminDashboard";
+import AdminRoutes from "./components/adminRoutes";
+import DashboardRedirect from "./components/dashboarRedirect";
 
 function App() {
   return (
     <Routes>
+      <Route path="/home" element={<Home />} />
       <Route path="/login" element={<Login />} />
-      <Route path="register" element={<Registration />} />
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/register" element={<Registration />} />
+      <Route path="/" element={<DashboardRedirect />} />
       <Route element={<ProtectedLayout />}>
         <Route path="/dashboard" element={<UserDashboard />} />
         <Route path="/posts">
@@ -29,21 +30,18 @@ function App() {
           <Route path=":id" element={<GetPost />} />
           <Route path="me" element={<GetMyPosts />} />
           <Route path="create" element={<CreatePost />} />
-          <Route path="try" element={<Tyr />} />
+          <Route path="create/:id" element={<CreatePost />} />
+          <Route path="management" element={<AdminPostManagement />} />
         </Route>
+        <Route
+          path="/admin"
+          element={
+            <AdminRoutes>
+              <AdminDashboard />
+            </AdminRoutes>
+          }
+        />
       </Route>
-      {/* <section className="content_section"> */}
-      {/* <Registration /> */}
-      {/* <Login /> */}
-      {/* <CreatePost /> */}
-      {/* <GetPosts /> */}
-      {/* <GetPost /> */}
-      {/* <UserDashboard /> */}
-      {/* <Home /> */}
-      {/* <SideNav /> */}
-      {/* <AdminPostManagement /> */}
-      {/* <Layout /> */}
-      {/* </section> */}
     </Routes>
   );
 }
