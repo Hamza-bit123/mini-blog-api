@@ -5,7 +5,6 @@ import { fetchWithAuth } from "../../api/api";
 
 const GetPosts = () => {
   const [posts, setPosts] = useState(null);
-  const [pageCount, setPageCount] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -14,7 +13,6 @@ const GetPosts = () => {
       });
       const data = await response.json();
       setPosts(data.data.posts);
-      setPageCount(data.data.totalPosts);
     };
 
     fetchData();
